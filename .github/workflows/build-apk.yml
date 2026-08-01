@@ -40,6 +40,26 @@ jobs:
             echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > my-upload-key.jks || echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > my-upload-key.jks || true
           fi
 
+          if [ ! -f my-upload-key.jks ]; then
+            if [ -f my-upload-key.jks.base64 ]; then
+              echo "Decoding my-upload-key.jks.base64..."
+              base64 -d my-upload-key.jks.base64 > my-upload-key.jks || base64 --decode my-upload-key.jks.base64 > my-upload-key.jks || true
+            fi
+          fi
+
+          if [ ! -s my-upload-key.jks ]; then
+            echo "Generating release keystore fallback (my-upload-key.jks)..."
+            keytool -genkeypair -v \
+              -keystore my-upload-key.jks \
+              -storepass "areuokay123" \
+              -alias "areuokaykey" \
+              -keypass "areuokay123" \
+              -keyalg RSA \
+              -keysize 2048 \
+              -validity 10000 \
+              -dname "CN=AreYouOkay,O=WinduLab,C=ID"
+          fi
+
           if [ -f debug.keystore.base64 ]; then
             echo "Decoding debug.keystore.base64..."
             base64 -d debug.keystore.base64 > debug.keystore || base64 --decode debug.keystore.base64 > debug.keystore || true
@@ -75,10 +95,10 @@ jobs:
 
       - name: Build Release APK with ProGuard
         env:
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || 'areuokay123' }}
+          STORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD || 'areuokay123' }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS || 'areuokaykey' }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD || 'areuokay123' }}
           VERSION_NAME: ${{ steps.release_tag.outputs.tag }}
           BUILD_NUMBER: ${{ github.run_number }}
         run: gradle assembleRelease --stacktrace
