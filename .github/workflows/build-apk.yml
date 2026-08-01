@@ -38,17 +38,11 @@ jobs:
           if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
             echo "Decoding release keystore from secrets..."
             echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > my-upload-key.jks || echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > my-upload-key.jks || true
-          fi
-
-          if [ ! -f my-upload-key.jks ]; then
-            if [ -f my-upload-key.jks.base64 ]; then
-              echo "Decoding my-upload-key.jks.base64..."
-              base64 -d my-upload-key.jks.base64 > my-upload-key.jks || base64 --decode my-upload-key.jks.base64 > my-upload-key.jks || true
-            fi
-          fi
-
-          if [ ! -s my-upload-key.jks ]; then
-            echo "Generating release keystore fallback (my-upload-key.jks)..."
+          elif [ -n "${{ secrets.KEYSTORE_PASSWORD }}" ]; then
+            echo "Using repository my-upload-key.jks with secret credentials"
+          else
+            echo "Generating fresh release keystore (my-upload-key.jks) with hardcoded credentials..."
+            rm -f my-upload-key.jks
             keytool -genkeypair -v \
               -keystore my-upload-key.jks \
               -storepass "areuokay123" \
