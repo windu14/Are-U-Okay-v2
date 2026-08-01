@@ -40,16 +40,14 @@ jobs:
           if [ -n "${{ secrets.KEYSTORE_BASE64 }}" ]; then
             echo "Decoding release keystore from secrets..."
             echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > my-upload-key.jks || echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 --decode > my-upload-key.jks || true
-          elif [ -n "${{ secrets.KEYSTORE_PASSWORD }}" ]; then
-            echo "Using repository my-upload-key.jks with secret credentials"
           else
-            echo "Generating fresh release keystore (my-upload-key.jks) with hardcoded credentials..."
+            echo "Generating fresh release keystore (my-upload-key.jks)..."
             rm -f my-upload-key.jks
             keytool -genkeypair -v \
               -keystore my-upload-key.jks \
-              -storepass "areuokay123" \
-              -alias "areuokaykey" \
-              -keypass "areuokay123" \
+              -storepass "${{ secrets.KEYSTORE_PASSWORD || 'areuokay123' }}" \
+              -alias "${{ secrets.KEY_ALIAS || 'areuokaykey' }}" \
+              -keypass "${{ secrets.KEY_PASSWORD || 'areuokay123' }}" \
               -keyalg RSA \
               -keysize 2048 \
               -validity 10000 \
@@ -114,6 +112,23 @@ jobs:
           git tag -f ${{ steps.release_tag.outputs.tag }}
           git push -f origin ${{ steps.release_tag.outputs.tag }} || true
 
+      - name: Generate Release Notes Body
+        if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/'))
+        run: |
+          COMMIT_TITLE=$(git log -1 --pretty=format:"%s")
+          COMMIT_BODY=$(git log -1 --pretty=format:"%b")
+          echo "## 🚀 What's New in ${{ steps.release_tag.outputs.tag }}" > release_notes.txt
+          echo "" >> release_notes.txt
+          echo "• **$COMMIT_TITLE**" >> release_notes.txt
+          if [ -n "$COMMIT_BODY" ]; then
+            echo "$COMMIT_BODY" | grep -v '^[[:space:]]*$' | sed 's/^/  • /' >> release_notes.txt
+          fi
+          echo "" >> release_notes.txt
+          echo "### 📋 Summary" >> release_notes.txt
+          echo "• Pembaruan AI Chat dengan auto-fallback Groq & Gemini API" >> release_notes.txt
+          echo "• Sistem OTA Update otomatis mendeteksi rilis versi terbaru" >> release_notes.txt
+          echo "• Perbaikan performa dan penandatanganan release APK" >> release_notes.txt
+
       - name: Publish GitHub Release
         if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/'))
         uses: softprops/action-gh-release@v2
@@ -121,9 +136,10 @@ jobs:
           tag_name: ${{ steps.release_tag.outputs.tag }}
           files: app/build/outputs/apk/release/*.apk
           name: Release ${{ steps.release_tag.outputs.tag }}
+          body_path: release_notes.txt
           draft: false
           prerelease: false
-          generate_release_notes: true
+          generate_release_notes: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
