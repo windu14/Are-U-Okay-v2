@@ -140,10 +140,8 @@ class GeminiApiService {
             "llama-3.3-70b-versatile",
             "llama-3.1-8b-instant",
             "llama-3.2-3b-preview",
-            "llama3-70b-8192",
-            "llama3-8b-8192",
-            "gemma2-9b-it",
-            "mixtral-8x7b-32768"
+            "llama-3.2-1b-preview",
+            "gemma2-9b-it"
         )
         val mediaType = "application/json; charset=utf-8".toMediaType()
 
@@ -215,7 +213,7 @@ class GeminiApiService {
         userPrompt: String,
         systemInstruction: String
     ): Result<String> {
-        val geminiModels = listOf("gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro")
+        val geminiModels = listOf("gemini-2.5-flash", "gemini-3.5-flash", "gemini-flash-latest")
         val mediaType = "application/json; charset=utf-8".toMediaType()
 
         val rootJson = JSONObject()

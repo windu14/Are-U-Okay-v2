@@ -171,12 +171,26 @@ fun UpdateDialog(
                                     line.isNotBlank() &&
                                     !line.contains("Full Changelog", ignoreCase = true) &&
                                     !line.startsWith("http://", ignoreCase = true) &&
-                                    !line.startsWith("https://", ignoreCase = true)
+                                    !line.startsWith("https://", ignoreCase = true) &&
+                                    !line.startsWith("What's Changed", ignoreCase = true)
+                                }
+                                .map { line ->
+                                    var cleaned = line
+                                        .replace(Regex("""\s+by\s+@[\w-]+(?:\s+in\s+\S+)?"""), "")
+                                        .replace(Regex("""\s+in\s+https?://\S+"""), "")
+                                        .replace(Regex("""\s+\(#[0-9]+\)"""), "")
+                                        .trim()
+                                    if (cleaned.startsWith("*") || cleaned.startsWith("-")) {
+                                        cleaned = "• " + cleaned.substring(1).trim()
+                                    } else if (!cleaned.startsWith("•")) {
+                                        cleaned = "• " + cleaned
+                                    }
+                                    cleaned
                                 }
                             val displayText = if (cleanNotes.isNotEmpty()) {
                                 cleanNotes.joinToString("\n")
                             } else {
-                                "• Perbaikan performa & kestabilan aplikasi\n• Peningkatan sistem cache media & audio\n• Animasi transisi & pembaruan UI"
+                                "• Perbaikan performa & kestabilan aplikasi\n• Pembaruan AI Chat & fallback otomatis\n• Animasi transisi & integrasi OTA GitHub"
                             }
                             Text(
                                 text = displayText,
